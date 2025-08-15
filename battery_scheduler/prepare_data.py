@@ -3,7 +3,8 @@ from datetime import datetime, timedelta, UTC
 import pandas as pd
 import requests
 
-from . import config
+
+CARBON_API_URL = "https://api.carbonintensity.org.uk/intensity/{from_dt}/{to_dt}"
 
 # ---------------------------
 # BUILD HALF-HOURLY INDEX
@@ -21,15 +22,15 @@ def build_time_index(hours=48):
 # PRICE MODELS
 # ---------------------------
 
-def get_flat_prices(index):
-    return pd.Series([config.FLAT_IMPORT_PRICE] * len(index), index=index)
+def get_flat_prices(index, flat_import_price):
+    return pd.Series([flat_import_price] * len(index), index=index)
 
 
-def get_tou_prices(index):
+def get_tou_prices(index, tou_periods):
     prices = []
     for ts in index:
         hour = ts.hour
-        for start, end, price in config.TOU_PERIODS:
+        for start, end, price in tou_periods:
             if start <= hour < end:
                 prices.append(price)
                 break
@@ -61,7 +62,7 @@ def get_csv_prices(index, path):
 def get_carbon_intensity(index):
     start_str = index[1].strftime("%Y-%m-%dT%H:%MZ")
     end_str = (index.max() + pd.Timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%MZ")
-    url = config.CARBON_API_URL.format(from_dt=start_str, to_dt=end_str)
+    url = CARBON_API_URL.format(from_dt=start_str, to_dt=end_str)
     r = requests.get(url)
     data = r.json()["data"]
     ci_series = pd.Series(
@@ -74,20 +75,52 @@ def get_carbon_intensity(index):
 # MAIN
 # ---------------------------
 
-def prepare_data():
-    idx = build_time_index(config.FORECAST_HOURS)
+def prepare_data(
+        forecast_hours=48,
+        tariff_type="flat",
+        flat_export_price=5.0,
+        flat_import_price=30.0,
+        tou_periods=((0,6,12),(6,16,30),(16,19,40),(19,24,25)),
+        csv_path="prices.csv"
+):
+    """
+    Prepare a DataFrame of electricity prices and carbon intensity for a given tariff.
+
+    Parameters
+    ----------
+    forecast_hours : int
+        Number of hours to forecast (default 48).
+    tariff_type : str
+        Type of electricity tariff: "flat", "TOU" (time-of-use), or "csv" (default "flat").
+    flat_export_price : float
+        Export price in pence per kWh (default 5.0).
+    flat_import_price : float
+        Import price in pence per kWh for flat tariff (default 30.0).
+    tou_periods : tuple of tuples
+        Time-of-use periods in the format ((start_hour, end_hour, price), ...) (used if tariff_type="TOU").
+    csv_path : str
+        Path to CSV file with prices (used if tariff_type="csv").
+
+    Returns
+    -------
+    pd.DataFrame indexed by timestamp, with columns:
+        - import_price_p_per_kWh
+        - export_price_p_per_kWh
+        - carbon_intensity_g_per_kWh
+    """
+    idx = build_time_index(forecast_hours)
 
     # Prices
-    if config.TARIFF_TYPE == "flat":
-        import_prices = get_flat_prices(idx)
-    elif config.TARIFF_TYPE == "TOU":
-        import_prices = get_tou_prices(idx)
-    elif config.TARIFF_TYPE == "csv":
-        import_prices = get_csv_prices(idx, config.CSV_PATH)
+    if tariff_type == "flat":
+        import_prices = get_flat_prices(idx, flat_import_price)
+    elif tariff_type == "TOU":
+        import_prices = get_tou_prices(idx, tou_periods)
+    elif tariff_type == "csv":
+        import_prices = get_csv_prices(idx, csv_path)
     else:
         raise ValueError("Unknown tariff type")
 
-    export_prices = pd.Series([config.FLAT_EXPORT_PRICE] * len(idx), index=idx)
+    export_prices = pd.Series([flat_export_price] * len(idx), index=idx)
 
     # Carbon intensity
     carbon = get_carbon_intensity(idx)
