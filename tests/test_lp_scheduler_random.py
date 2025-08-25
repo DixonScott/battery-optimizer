@@ -40,7 +40,7 @@ def test_random_lp_scheduler(seed):
     mode = random.choice(["cost", "carbon"])
 
     # --- Run LP scheduler ---
-    results_df = lp_schedule(
+    _, _, results_df = lp_schedule(
         df, mode, max_charge_kw, max_discharge_kw,
         min_soc_kwh, max_soc_kwh, initial_soc_kwh, efficiency,
         power_demand
@@ -62,7 +62,7 @@ def test_random_lp_scheduler(seed):
     discharge_grid = results_df["discharge_grid"].to_numpy()
     grid_home = results_df["grid_home"].to_numpy()
     discharge = discharge_home + discharge_grid
-    print(results_df)
+    print(results_df[["charge", "discharge_home", "discharge_grid", "grid_home"]])
 
     soc = initial_soc_kwh + np.cumsum((efficiency * charge - discharge) * dt)
     soc = np.insert(soc, 0, initial_soc_kwh)

@@ -3,8 +3,9 @@ import pulp
 
 
 def lp_schedule(df, mode, max_charge_kw, max_discharge_kw,
-                min_soc_kwh, max_soc_kwh, initial_soc_kwh, efficiency,
-                power_demand):
+                min_soc_kwh, max_soc_kwh, initial_soc_kwh,
+                efficiency, power_demand,
+                min_final_soc_kwh = None, max_final_soc_kwh = None):
     """
     Compute optimal battery charging and discharging schedule with linear programming.
 
@@ -37,6 +38,12 @@ def lp_schedule(df, mode, max_charge_kw, max_discharge_kw,
     power_demand : list of float
         Power demand of the home at each timestep (kW).
         e.g. power_demand[i] is the power required between the ith and (i+1)th timestep.
+    min_final_soc_kwh : float, optional
+        The minimum state of charge at the end of the schedule (kWh).
+        May be set to None (default), in which case the minimum final SoC is still constrained by `min_soc_kwh`.
+    max_final_soc_kwh : float, optional
+        The maximum state of charge at the end of the schedule (kWh).
+        May be set to None (default), in which case the maximum final SoC is still constrained by `max_soc_kwh`.
 
     Returns
     -------
@@ -63,6 +70,12 @@ def lp_schedule(df, mode, max_charge_kw, max_discharge_kw,
     # Initial SoC
     prob += soc[0] == initial_soc_kwh
 
+    # Final SoC
+    if min_final_soc_kwh is not None:
+        prob += soc[n] >= min_final_soc_kwh
+    if max_final_soc_kwh is not None:
+        prob += soc[n] <= max_final_soc_kwh
+
     for t in range(n):
         # SoC is equal to previous SoC after charging and discharging
         prob += soc[t+1] == soc[t] + dt * (efficiency * charge[t] - discharge_home[t] - discharge_grid[t])
@@ -86,8 +99,14 @@ def lp_schedule(df, mode, max_charge_kw, max_discharge_kw,
 
     # Solve
     prob.solve()
-    print("LP status:", pulp.LpStatus[prob.status])
+    status = pulp.LpStatus[prob.status]
+    print("LP status:", status)
     print("Objective value:", pulp.value(prob.objective))
+
+    soc_series = pd.Series(
+        [pulp.value(soc[t]) for t in range(n+1)],
+        name="SoC"
+    )
 
     # Convert results to df
     results_df = pd.DataFrame({
@@ -98,4 +117,4 @@ def lp_schedule(df, mode, max_charge_kw, max_discharge_kw,
     })
     results_df.index = df.index
     results_df.index.name = "timestep"
-    return results_df
+    return status, soc_series, pd.concat([df, results_df], axis=1)
