@@ -1,12 +1,12 @@
 from datetime import datetime
 
-import streamlit as st
-import pandas as pd
 import altair as alt
+import pandas as pd
+import streamlit as st
 
-from battery_scheduler.lp_scheduler import lp_schedule
-from battery_scheduler.prepare_data import get_carbon_intensity
-import battery_scheduler.results_analysis as analysis
+from battery_optimizer.lp_scheduler import lp_schedule
+from battery_optimizer.prepare_data import get_carbon_intensity
+import battery_optimizer.results_analysis as analysis
 
 
 def get_flat_series(date_range, flat=None):

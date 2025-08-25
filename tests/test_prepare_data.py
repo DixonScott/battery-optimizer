@@ -1,6 +1,6 @@
 import pandas as pd
 
-from battery_scheduler.prepare_data import prepare_data
+from battery_optimizer.prepare_data import prepare_data
 
 
 def test_prepare_data():

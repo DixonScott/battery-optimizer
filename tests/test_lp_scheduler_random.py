@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from battery_scheduler.lp_scheduler import lp_schedule
+from battery_optimizer.lp_scheduler import lp_schedule
 
 
 @pytest.mark.parametrize("seed", list(range(100)))
