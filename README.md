@@ -1,9 +1,13 @@
+[![Streamlit](https://img.shields.io/badge/Streamlit-ffffff?logo=streamlit&style=flat&color=FF4B4B&logoColor=ffffff)](https://battery-optimizer.streamlit.app/)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 ![Last commit](https://img.shields.io/github/last-commit/DixonScott/battery-optimizer)
 
 # Home Battery Optimizer
 
 This app calculates the optimal charging and discharging schedule for a home battery to minimise cost or carbon emissions. This is done using linear programming (LP). At each timestep, the LP solver chooses the best charge and discharge actions for the battery, subject to the constraints imposed by the power demand of the home, and the parameters of the battery. 
+
+## Try It Now
+[Web App on Streamlit](https://battery-optimizer.streamlit.app/)
 
 ## How to Use
 1. Click the input tab.
@@ -12,7 +16,7 @@ This app calculates the optimal charging and discharging schedule for a home bat
     - Note: the fastest way to set up a completely new input would be to select "Flat" in each of the select boxes (except optimisation mode), select appropriate values, and then use the data editor to set the remaining values. You can then download this as a CSV for fast input later.
 4. Set the battery parameters.
     - Note: round trip efficiency (RTE) is only applied to charging the battery. This means that battery energy refers to usable energy, or energy that can be extracted from the battery.
-5. Click "Run Optimization" at the bottom.
+5. Click "Run Optimisation" at the bottom.
 6. Click the results tab.
 
 ## Results
@@ -36,22 +40,22 @@ From top to bottom, the results tab shows:
 - **Web App:** Streamlit
 
 ## Run Locally
-#### Clone the repository
+**Clone the repository:**
 ```
 git clone https://github.com/DixonScott/battery-optimizer.git
 cd battery-optimizer
 ```
-#### Create and activate virtual environment
+**Create and activate virtual environment:**
 ```
 python -m venv venv
 source venv/bin/activate  # On Mac/Linux
 venv\Scripts\activate     # On Windows
 ```
-#### Install dependencies
+**Install dependencies:**
 ```
 pip install -r requirements.txt
 ```
-#### Run the app
+**Run the app:**
 ```
 streamlit run app.py
 ```
