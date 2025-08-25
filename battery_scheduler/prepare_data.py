@@ -16,7 +16,7 @@ def build_time_index(hours=48):
     minute = 30 if now.minute >= 30 else 0
     now = now.replace(minute=minute, second=0, microsecond=0)
     end = now + timedelta(hours=hours)
-    return pd.date_range(start=now, end=end, freq="30min", tz="UTC")
+    return pd.date_range(start=now, end=end, freq="30min", tz="Europe/London")
 
 # ---------------------------
 # PRICE MODELS
@@ -59,17 +59,23 @@ def get_csv_prices(index, path):
 # CARBON INTENSITY
 # ---------------------------
 
-def get_carbon_intensity(index):
-    start_str = index[1].strftime("%Y-%m-%dT%H:%MZ")
-    end_str = (index.max() + pd.Timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%MZ")
+def get_carbon_intensity(index, dt=30):
+    index_utc = index.tz_convert("UTC")
+
+    start_str = index_utc[1].strftime("%Y-%m-%dT%H:%MZ")
+    end_str = (index_utc.max() + pd.Timedelta(minutes=dt)).strftime("%Y-%m-%dT%H:%MZ")
+
     url = CARBON_API_URL.format(from_dt=start_str, to_dt=end_str)
     r = requests.get(url)
     data = r.json()["data"]
+
     ci_series = pd.Series(
         {pd.to_datetime(d["from"], utc=True): d["intensity"]["forecast"]
          for d in data}
     )
-    return ci_series.reindex(index, method="nearest")
+    ci_series = ci_series.reindex(index_utc, method="nearest")
+    ci_series.index = ci_series.index.tz_convert("Europe/London")
+    return ci_series
 
 # ---------------------------
 # MAIN
