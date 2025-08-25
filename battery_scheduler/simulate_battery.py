@@ -47,29 +47,29 @@ def simulate_battery(df, schedule=None, capacity_kwh=3.0, initial_soc_kwh=1.0,
     soc_list = []
     actual_power_list = []
 
-    step_hours = (df.index[1] - df.index[0]).total_seconds() / 3600
+    dt = (df.index[1] - df.index[0]).total_seconds() / 3600
 
     for ts, power in schedule.items():
         # Clip requested power to allowed range
         if power > 0:
             power = min(power, max_charge_kw)
             # Adjust for efficiency on charging
-            soc_change = power * step_hours * efficiency
+            soc_change = power * dt * efficiency
         else:
             power = max(power, -max_discharge_kw)
-            soc_change = power * step_hours
+            soc_change = power * dt
 
         # Apply SoC limits
         new_soc = soc + soc_change
         if new_soc > max_soc_kwh:
             # Reduce charging to not exceed max
             soc_change = max_soc_kwh - soc
-            power = soc_change / step_hours / (efficiency if power > 0 else 1/efficiency)
+            power = soc_change / dt / (efficiency if power > 0 else 1)
             new_soc = max_soc_kwh
         elif new_soc < min_soc_kwh:
             # Reduce discharging to not go below min
             soc_change = min_soc_kwh - soc
-            power = soc_change / step_hours / (efficiency if power > 0 else 1/efficiency)
+            power = soc_change / dt / (efficiency if power > 0 else 1)
             new_soc = min_soc_kwh
 
         soc_list.append(soc)
